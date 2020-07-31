@@ -51,4 +51,3 @@ extension User: BasicAuthenticatable {
         return \.password
     }
 }
-

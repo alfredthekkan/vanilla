@@ -15,7 +15,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     let router = EngineRouter.default()
     try routes(router)
     services.register(router, as: Router.self)
-   
+
     // Register middleware
     var middlewares = MiddlewareConfig() // Create _empty_ middleware config
     // middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
@@ -51,29 +51,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
     // Register our server
     services.register(wss, as: WebSocketServer.self)
-    
-    // Add WebSocket upgrade support to GET /echo
-//    wss.get(Room.Route.join, Int.parameter, Int.parameter) { ws, req in
-//
-//        let roomId: Int = try req.parameters.next()
-//        let playerId: Int = try req.parameters.next()
-//
-//        guard let room = Room.find(id: roomId) else { throw HTTPError.init(identifier: "", reason: "room not found")}
-//        room.broadcastManger.clientSockets.append(ws)
-////        ws.onText { (ws, text) in
-////            print(text)
-////            ws.send("received: \(text)")
-////            // get action from string
-////            // Update game
-////            // send message to all other clients in the room
-////        }
-//        // Add a new on text callback
-//        ws.onText { ws, text in
-//            // Simply echo any received text
-//            ws.send("Hello, \(text)")
-//        }
-//    }
-    
     wss.get("join_room_socket", Int.parameter, Int.parameter) { ws, req in
         // Add a new on text callback
         let roomId: Int = try req.parameters.next()
