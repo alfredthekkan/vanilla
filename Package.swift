@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/redis.git", from: "3.0.0")
     ],
     targets: [
-        .target(name: "App", dependencies: ["FluentPostgreSQL", "Vapor", "Authentication", "Redis"]),
+        .target(name: "App", dependencies: ["FluentPostgreSQL", "Vapor", "Authentication", "Redis", "PostgreSQL"]),
         .target(name: "Run", dependencies: ["App"]),
         .testTarget(name: "AppTests", dependencies: ["App"])
     ]
