@@ -19,6 +19,11 @@ public func routes(_ router: Router) throws {
         }
     }
     
+    router.get { req in
+        return "It works!"
+    }
+    
+    
     let userController = UserController()
     let roomController = RoomController()
     let gameController = GameController()
