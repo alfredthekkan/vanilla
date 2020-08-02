@@ -9,156 +9,6 @@ import Foundation
 import FluentPostgreSQL
 import Vapor
 
-/*
-class Game {
-
-    var teamA: Team?
-    var teamB: Team?
-    var isTrumpShown: Bool = false
-    var bid: Bid?
-    var bids: [Bid] = []
-    var numberOfBids: Int = 0
-    var actions: [PlayAction] = []
-    var status: GameStatus = .bidding
-    var nextPlayer: GamePlayer?
-    var winningPlay: PlayAction?
-    
-    var didEveryonePlay: Bool {
-        return actions.count == 6
-    }
-    
-    var biddingTeam: Team? {
-        let isMemberOfTeamA = teamA?.players.contains { $0.id == bid?.player.id }
-        return isMemberOfTeamA == true ? teamA : teamB
-    }
-    
-    var nonBiddingTeam: Team? {
-        return teamA === biddingTeam ? teamB : teamA
-    }
-    
-    init(_ players: [User]) {
-        guard players.count == 6 else { fatalError("Game can be initialized only with 6 players")}
-        
-        var teamAplayers: [User] = []
-        var teamBplayers: [User] = []
-        
-        for i in 0..<players.count {
-            if i%2 == 0 {
-                teamAplayers.append(players[i])
-            } else {
-                teamBplayers.append(players[i])
-            }
-        }
-        
-        teamA = Team(players: teamAplayers)
-        teamB = Team(players: teamBplayers)
-    }
-    
-    func updateNextPlayer(action: PlayAction) {
-        let allPlayers = zip(teamA?.players ?? [], teamB?.players ?? []).flatMap { [$0.0, $0.1] }
-        let index = allPlayers.firstIndex { $0.id == action.player?.id }
-        var nextIndex: Int
-        if index == allPlayers.endIndex {
-            nextIndex = allPlayers.startIndex
-        } else {
-            nextIndex = index!.advanced(by: 1)
-        }
-        nextPlayer = allPlayers[nextIndex]
-    }
-    
-    func addAction(_ action: PlayAction) {
-        
-        if action.openTrump {
-            self.isTrumpShown = true
-        }
-        
-        actions.append(action)
-        updateNextPlayer(action: action)
-        
-        // Find temporary winner of hand
-        
-        // First player who played in this hand
-        if actions.count == 1 {
-            winningPlay = action
-        } else {
-            let currentWinningCard = winningPlay!.card
-            let newCard = action.card!
-            
-            if newCard.sign == currentWinningCard!.sign {
-                if newCard > currentWinningCard! {
-                    winningPlay = action
-                }
-            } else {
-                if isTrumpShown {
-                    if newCard.sign == bid?.card.sign {
-                        winningPlay = action
-                    }
-                }
-            }
-        }
-        
-        if didEveryonePlay {
-            // find points
-            
-            let points = actions.reduce(0) { $0 + ($1.card?.value.points ?? 0) }
-            let isMemberofTeamA = teamA?.players.contains { $0.id == winningPlay?.player?.id }
-            
-            if isMemberofTeamA == true {
-                teamA?.pointsInRound += points
-            } else {
-                teamB?.pointsInRound += points
-            }
-            
-            // reset round
-            actions.removeAll()
-            winningPlay = nil
-            
-            var didThisRoundEnd = true
-            // game ending condition
-            if biddingTeam!.pointsInRound >= bid!.points {
-                // bidding team wins
-                biddingTeam?.points += bid!.gamePointsOnWin
-                nonBiddingTeam?.points -= bid!.gamePointsOnWin
-                
-                print("Bidding team won. Congratulations")
-                
-            } else if nonBiddingTeam!.pointsInRound >= 40 - bid!.points {
-                // non bidding team wins
-                biddingTeam?.points += bid!.gamePointsOnLoose
-                nonBiddingTeam?.points -= bid!.gamePointsOnLoose
-                
-                print("Bidding team loose. Shame on you poopy head")
-            } else {
-                didThisRoundEnd = false
-            }
-            
-            if didThisRoundEnd {
-                bid = nil
-                status = .bidding
-                teamA?.pointsInRound = 0
-                teamB?.pointsInRound = 0
-            }
-        }
-    }
-    
-    func addBid(_ bid: Bid) {
-        bids.append(bid)
-        if bid.points > 0 {
-            self.bid = bid
-        }
-        if bids.count == 6 {
-            status = .ongoing
-        }
-    }
-}
-
-enum GameStatus {
-    case bidding
-    case ongoing
-    case ended
-}
-*/
-
 final class Game: PostgreSQLModel {
     var id: Int?
     
@@ -397,6 +247,9 @@ final class Game: PostgreSQLModel {
         }
         
         func distributeCards() {
+            self.teamB?.points_in_round = 0
+            self.teamA?.points_in_round = 0
+            self.bid = nil
             var cards = Card.allCards
             func randomHand() -> [String] {
                 var cardsInHand: [String] = []
@@ -471,6 +324,9 @@ final class Game: PostgreSQLModel {
         }
         
         func joinPlayer(_ player: User) {
+            let allPlayers = (self.teamA?.players ?? []) + (self.teamB?.players ?? [])
+            guard allPlayers.first(where: { $0.playerId == player.id }) == nil else { return }
+            
             let gamePlayer = GamePlayer(user: player)
             let teamAPlayerCount = self.teamA?.players.count ?? 0
             let teamBplayerCount = self.teamB?.players.count ?? 0
