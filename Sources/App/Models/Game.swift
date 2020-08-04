@@ -37,6 +37,7 @@ final class Game: PostgreSQLModel {
         case trumpOpen = "trump_open"
         case biddingFinished = "bidding_finished"
         case cardsInEarChanged = "cards_in_ear_changed"
+        case distributeCards = "distribute_cards"
     }
     
     static func fullGame(_ request: Request, game: Game) throws -> Future<Game.Public> {
@@ -184,6 +185,14 @@ final class Game: PostgreSQLModel {
             }
         }
         
+        func startNewRound() {
+            self.is_trump_open = false
+            self.teamA?.points_in_round = 0
+            self.teamB?.points_in_round = 0
+            plays = []
+            self.bid = nil
+        }
+        
         func updateGameFinishStatusIfNeeded() {
             let bid = self.bid?.points ?? 0
             let bidder = self.bid?.player_id
@@ -247,9 +256,8 @@ final class Game: PostgreSQLModel {
         }
         
         func distributeCards() {
-            self.teamB?.points_in_round = 0
-            self.teamA?.points_in_round = 0
-            self.bid = nil
+            startNewRound()
+            self.event = .distributeCards
             var cards = Card.allCards
             func randomHand() -> [String] {
                 var cardsInHand: [String] = []
