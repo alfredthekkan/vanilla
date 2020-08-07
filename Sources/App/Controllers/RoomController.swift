@@ -89,6 +89,9 @@ final class RoomController {
             var room: Room?
             return try request.content.decode(JoinRoomRequest.self).flatMap { roomRequest -> Future<Game?> in
                 room = Room.find(id: roomRequest.roomId)
+                if room == nil {
+                    throw NSError.roomNotFound
+                }
                 return Game.find(room!.gameId!, on: request)
             }.flatMap { game -> Future<Game.Public> in
                 try Game.fullGame(request, game: game!)
@@ -137,4 +140,8 @@ extension RoomController {
         action.playerName = user.name
         room.broadcastManger.broadcast(action)
     }
+}
+
+extension NSError {
+    static let roomNotFound = NSError(domain: "com.room.notFound", code: 404, userInfo: nil)
 }
