@@ -90,7 +90,8 @@ final class RoomController {
             return try request.content.decode(JoinRoomRequest.self).flatMap { roomRequest -> Future<Game?> in
                 room = Room.find(id: roomRequest.roomId)
                 if room == nil {
-                    throw NSError.roomNotFound
+                    throw ThurupError.roomNotFound
+//                    throw Abort(.notFound, reason: "Invalid Room Id")
                 }
                 return Game.find(room!.gameId!, on: request)
             }.flatMap { game -> Future<Game.Public> in
@@ -142,6 +143,38 @@ extension RoomController {
     }
 }
 
-extension NSError {
-    static let roomNotFound = NSError(domain: "com.room.notFound", code: 404, userInfo: nil)
+extension NSError: Debuggable {
+    public var identifier: String {
+        return self.domain
+    }
+    
+    public var reason: String {
+        return self.localizedDescription
+    }
+    
+    static let roomNotFound = NSError(domain: "com.room.notFound", code: 404, userInfo: [NSLocalizedDescriptionKey: "Invalid Room ID. Please check!"])
+}
+
+enum ThurupError: String {
+    case roomNotFound = "roomNotFound"
+}
+
+extension ThurupError: AbortError {
+    var status: HTTPResponseStatus {
+        switch self {
+        case .roomNotFound:
+            return .notFound
+        }
+    }
+    
+    var reason: String {
+        switch self {
+        case .roomNotFound:
+            return "Invalid Room ID"
+        }
+    }
+    
+    var identifier: String {
+        return self.rawValue
+    }
 }
