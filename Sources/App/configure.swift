@@ -2,6 +2,8 @@ import Vapor
 import FluentPostgreSQL
 import Authentication
 import Redis
+import SwiftyBeaver
+import SwiftyBeaverVapor
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
@@ -10,6 +12,13 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     try services.register(PostgreSQLProvider())
     try services.register(AuthenticationProvider())
     try services.register(RedisProvider())
+    
+    // OR console and cloud platform logging
+    let consoleDestination = ConsoleDestination()
+    let cloudDestination = SBPlatformDestination(appID: "B1QM59", appSecret: "rtcghinuMf6sjqFifngpnzzfgwcpovjL", encryptionKey: "vwgyfihjjkjbHzhjAsaukkqgtowEk5t2")
+    try services.register(SwiftyBeaverProvider(destinations: [consoleDestination, cloudDestination]))
+    
+    config.prefer(SwiftyBeaverVapor.self, for: Logger.self)
     
     // Register routes to the router
     let router = EngineRouter.default()
@@ -81,11 +90,12 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
             }
         }
     }
-
+    
+    let log = SwiftyBeaver.self
     if env.isRelease {
-        print("Production")
+        log.debug("Production")
     } else {
-        print("Development")
+        log.debug("Development")
     }
 }
 

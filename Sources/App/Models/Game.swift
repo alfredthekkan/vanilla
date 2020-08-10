@@ -8,6 +8,8 @@
 import Foundation
 import FluentPostgreSQL
 import Vapor
+import SwiftyBeaverVapor
+import SwiftyBeaver
 
 final class Game: PostgreSQLModel {
     var id: Int?
@@ -41,6 +43,10 @@ final class Game: PostgreSQLModel {
     }
     
     static func fullGame(_ request: Request, game: Game) throws -> Future<Game.Public> {
+        
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
         let publicGame = Game.Public()
         publicGame.gameId = game.id
         
@@ -100,6 +106,11 @@ final class Game: PostgreSQLModel {
         }
         
         func updateNextPlayerForAction(_ action: PlayAction) {
+            
+            let logger = SwiftyBeaver.self
+            logger.debug(#function)
+
+            
             let player = arrangedPlayers.elements.first { $0.playerId == action.playerId }
             if phase == "bid" {
                 if isBiddingFinished {
@@ -119,6 +130,9 @@ final class Game: PostgreSQLModel {
         }
         
         func processAction(_ action: PlayAction) {
+            let logger = SwiftyBeaver.self
+            logger.debug(#function)
+
             switch action.action {
             case .bidCard:
                 let bid = Bid()
@@ -194,6 +208,9 @@ final class Game: PostgreSQLModel {
         }
         
         func updateGameFinishStatusIfNeeded() {
+            let logger = SwiftyBeaver.self
+            logger.debug(#function)
+
             let bid = self.bid?.points ?? 0
             let bidder = self.bid?.player_id
             let isTeamA = self.teamA?.players.first { $0.playerId == bidder } != nil
@@ -256,6 +273,9 @@ final class Game: PostgreSQLModel {
         }
         
         func distributeCards() {
+            let logger = SwiftyBeaver.self
+            logger.debug(#function)
+
             startNewRound()
             self.event = .distributeCards
             var cards = Card.allCards
@@ -275,6 +295,9 @@ final class Game: PostgreSQLModel {
         }
         
         func updatePoints() {
+            let logger = SwiftyBeaver.self
+            logger.debug(#function)
+
             guard plays.count == 6 else { return }
             self.event = .roundWon
             var winner = plays.first!
@@ -307,8 +330,11 @@ final class Game: PostgreSQLModel {
         }
         
         func save(request: Request) -> Future<HTTPStatus> {
+            let logger = SwiftyBeaver.self
+            logger.debug(#function)
+
             
-            Game.find(self.gameId!, on: request).flatMap { game -> Future<Game> in
+            return Game.find(self.gameId!, on: request).flatMap { game -> Future<Game> in
                            game?.phase = self.phase ?? ""
                            game?.nextPlayerID = self.nextPlayerId
                         game?.is_trump_open  = self.is_trump_open
@@ -332,6 +358,9 @@ final class Game: PostgreSQLModel {
         }
         
         func joinPlayer(_ player: User) {
+            let logger = SwiftyBeaver.self
+            logger.debug(#function)
+
             let allPlayers = (self.teamA?.players ?? []) + (self.teamB?.players ?? [])
             guard allPlayers.first(where: { $0.playerId == player.id }) == nil else { return }
             

@@ -1,9 +1,14 @@
 import Vapor
 import Crypto
+import SwiftyBeaverVapor
+import SwiftyBeaver
 
 final class UserController {
 
     func register(_ request: Request) throws -> Future<User.Public> {
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
         return try request.content.decode(User.self).flatMap { player in
             let hasher = try request.make(BCryptDigest.self)
             let passwordHashed = try hasher.hash(player.password)
@@ -18,6 +23,9 @@ final class UserController {
     }
     
     func login(_ request: Request) throws -> User.Public {
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
         do {
             let player = try request.requireAuthenticated(User.self)
             return User.Public(id: try player.requireID(), email: player.email, name: player.name)

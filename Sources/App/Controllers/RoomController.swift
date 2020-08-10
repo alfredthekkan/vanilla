@@ -7,10 +7,17 @@
 
 import Foundation
 import Vapor
+import SwiftyBeaverVapor
+import SwiftyBeaver
 
 final class RoomController {
     
     func create(request: Request) throws -> Future<Room.Public> {
+        
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
+        
         do {
             let user = try request.requireAuthenticated(User.self)
             
@@ -43,6 +50,9 @@ final class RoomController {
     
     func joinn(request: Request) throws -> Future<Game.Public> {
         
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
         do {
             let user = try request.requireAuthenticated(User.self)
             var currentGame: Game?
@@ -83,6 +93,10 @@ final class RoomController {
         // add player to team A or team B
         // broadcast to all players
         
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
+        
         do {
             let user = try request.requireAuthenticated(User.self)
 
@@ -110,12 +124,15 @@ final class RoomController {
     }
     
     func fetchGame(request: Request) throws -> Future<Game.Public> {
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
         do {
             let _ = try request.requireAuthenticated(User.self)
             
             return try request.content.decode(JoinRoomRequest.self).flatMap { roomRequest -> Future<Game?> in
-                let room = Room.find(id: roomRequest.roomId)
-                return Game.find(room!.gameId!, on: request)
+                guard let room = Room.find(id: roomRequest.roomId) else { throw ThurupError.roomNotFound }
+                return Game.find(room.gameId!, on: request)
             }.flatMap { game -> Future<Game.Public> in
                 try Game.fullGame(request, game: game!)
             }
@@ -125,7 +142,10 @@ final class RoomController {
     }
     
     func fetch(request: Request) throws -> Future<Room.Public> {
-        try request.content.decode(JoinRoomRequest.self).map { roomRequest in
+        let logger = try? request.sharedContainer.make(Logger.self)
+        logger?.log(request.description, at: .verbose, file: #file, function: #function, line: #line, column: #column)
+
+        return try request.content.decode(JoinRoomRequest.self).map { roomRequest in
             _ = try request.requireAuthenticated(User.self)
             let room = Room.find(id: roomRequest.roomId)
             //access game and append player to game
@@ -136,6 +156,10 @@ final class RoomController {
 
 extension RoomController {
     func joinUser(user: User?, room: Room?) {
+    
+        let log = SwiftyBeaver.self
+        log.debug(#function)
+        
         guard let room = room, let user = user else { return }
         let action = PlayAction(playerId: user.id, action: "join_room", card: nil)
         action.playerName = user.name
